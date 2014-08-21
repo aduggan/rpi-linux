@@ -761,6 +761,7 @@ int __init bcm_register_device(struct platform_device *pdev)
 	return ret;
 }
 
+#ifndef CONFIG_OF
 #define SYNA_TP_I2C_ADDR	0x2c
 #define SYNA_TP_I2C_BOARD	1
 
@@ -775,6 +776,7 @@ static struct i2c_board_info syna_tp_i2c_info[] = {
 		.platform_data = &syna_tp_pdata,
 	},
 };
+#endif /* CONFIG_OF */
 
 /*
  * Use this macro for platform devices that are present in the Device Tree.
@@ -963,8 +965,10 @@ void __init bcm2708_init(void)
 			ARRAY_SIZE(bcm2708_spi_devices));
 #endif
 
+#ifndef CONFIG_OF
 	i2c_register_board_info(SYNA_TP_I2C_BOARD, syna_tp_i2c_info,
 			ARRAY_SIZE(syna_tp_i2c_info));
+#endif /* CONFIG_OF */
 }
 
 static void timer_set_mode(enum clock_event_mode mode,

@@ -58,7 +58,16 @@
 };
 
 &i2c1 {
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins>;
 	clock-frequency = <100000>;
+
+	i2c-hid-dev@2c {
+		compatible = "hid-over-i2c";
+		reg = <0x2c>;
+		hid-descr-addr = <0x0020>;
+		interrupt-parent = <&gpio>;
+		interrupts = <3 4>;
+	};
 };
