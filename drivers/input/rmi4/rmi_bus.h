@@ -184,6 +184,8 @@ struct rmi_transport_dev {
 	const char *proto_name;
 	const struct rmi_transport_ops *ops;
 	struct rmi_transport_stats stats;
+
+	struct rmi_device_platform_data pdata;
 };
 
 /**
@@ -227,10 +229,10 @@ struct rmi_device {
 
 #define to_rmi_device(d) container_of(d, struct rmi_device, dev)
 
-static inline const struct rmi_device_platform_data *
+static inline struct rmi_device_platform_data *
 rmi_get_platform_data(struct rmi_device *d)
 {
-	return dev_get_platdata(d->xport->dev);
+	return &d->xport->pdata;
 }
 
 bool rmi_is_physical_device(struct device *dev);
@@ -318,4 +320,10 @@ int rmi_for_each_dev(void *data, int (*func)(struct device *dev, void *data));
 
 extern struct bus_type rmi_bus_type;
 
+int rmi_of_property_read_u32(struct device *dev, u32 *result,
+				const char *prop, bool optional);
+int rmi_of_property_read_u16(struct device *dev, u16 *result,
+				const char *prop, bool optional);
+int rmi_of_property_read_u8(struct device *dev, u8 *result,
+				const char *prop, bool optional);
 #endif

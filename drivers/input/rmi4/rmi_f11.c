@@ -15,6 +15,7 @@
 #include <linux/kconfig.h>
 #include <linux/rmi.h>
 #include <linux/slab.h>
+#include <linux/of.h>
 #include "rmi_driver.h"
 
 #define F11_MAX_NUM_OF_FINGERS		10
@@ -552,6 +553,7 @@ struct f11_data {
 	struct mutex dev_controls_mutex;
 	u16 rezero_wait_ms;
 	struct f11_2d_sensor sensor;
+	struct rmi_f11_sensor_data f11_sensor_data;
 	unsigned long *abs_mask;
 	unsigned long *rel_mask;
 	unsigned long *result_bits;
@@ -1247,6 +1249,125 @@ static void f11_set_abs_params(struct rmi_function *fn, struct f11_data *f11)
 				     0, MT_TOOL_FINGER, 0, 0);
 }
 
+#ifdef CONFIG_OF
+static int rmi_f11_of_initialize(struct device *dev, struct f11_data *f11,
+				struct rmi_device_platform_data *pdata)
+{
+	u32 val;
+	int retval;
+
+	retval = rmi_of_property_read_u32(dev,
+			&f11->f11_sensor_data.axis_align.swap_axes,
+			"syna,swap-axes", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u32(dev,
+			&f11->f11_sensor_data.axis_align.flip_x,
+			"syna,flip-x", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u32(dev,
+			&f11->f11_sensor_data.axis_align.flip_y,
+			"syna,flip-y", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u16(dev,
+			&f11->f11_sensor_data.axis_align.clip_x_low,
+			"syna,clip-x-low", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u16(dev,
+			&f11->f11_sensor_data.axis_align.clip_y_low,
+			"syna,clip-y-low", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u16(dev,
+			&f11->f11_sensor_data.axis_align.clip_x_high,
+			"syna,clip-x-high", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u16(dev,
+			&f11->f11_sensor_data.axis_align.clip_y_high,
+			"syna,clip-y-high", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u16(dev,
+			&f11->f11_sensor_data.axis_align.offset_x,
+			"syna,offset-x", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u16(dev,
+			&f11->f11_sensor_data.axis_align.offset_y,
+			"syna,offset_y", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u8(dev,
+			&f11->f11_sensor_data.axis_align.delta_x_threshold,
+			"syna,delta-x-threshold", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u8(dev,
+			&f11->f11_sensor_data.axis_align.delta_y_threshold,
+			"syna,delta-y-threshold", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u32(dev, &val,
+			"syna,type-a", 1);
+	if (retval)
+		return retval;
+	f11->f11_sensor_data.type_a = !!val;
+
+	retval = rmi_of_property_read_u32(dev,
+			(u32 *)&f11->f11_sensor_data.sensor_type,
+			"syna,sensor-type", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u32(dev,
+			(u32 *)&f11->f11_sensor_data.x_mm,
+			"syna,x-mm", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u32(dev,
+			(u32 *)&f11->f11_sensor_data.y_mm,
+			"syna,y-mm", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u32(dev,
+			(u32 *)&f11->f11_sensor_data.disable_report_mask,
+			"syna,disable-report-mask", 1);
+	if (retval)
+		return retval;
+
+	retval = rmi_of_property_read_u16(dev, &pdata->f11_rezero_wait,
+			"syna,rezero-wait", 1);
+	if (retval)
+		return retval;
+
+	return 0;
+}
+#else
+static inline int rmi_f11_of_initialize(struct device *dev,
+					struct f11_data *f11,
+					struct rmi_device_platform_data *pdata)
+{
+	return -ENODEV;
+}
+#endif
+
 static int rmi_f11_initialize(struct rmi_function *fn)
 {
 	struct rmi_device *rmi_dev = fn->rmi_dev;
@@ -1257,7 +1378,7 @@ static int rmi_f11_initialize(struct rmi_function *fn)
 	u16 control_base_addr;
 	u16 max_x_pos, max_y_pos, temp;
 	int rc;
-	const struct rmi_device_platform_data *pdata = rmi_get_platform_data(rmi_dev);
+	struct rmi_device_platform_data *pdata = rmi_get_platform_data(rmi_dev);
 	struct rmi_driver_data *drvdata = dev_get_drvdata(&rmi_dev->dev);
 	struct f11_2d_sensor *sensor;
 	u8 buf;
@@ -1275,6 +1396,14 @@ static int rmi_f11_initialize(struct rmi_function *fn)
 			GFP_KERNEL);
 	if (!f11)
 		return -ENOMEM;
+
+	if (fn->dev.of_node) {
+		rc = rmi_f11_of_initialize(&fn->dev, f11, pdata);
+		if (rc)
+			return rc;
+	} else if (pdata->f11_sensor_data) {
+		f11->f11_sensor_data = *pdata->f11_sensor_data;
+	}
 
 	f11->rezero_wait_ms = pdata->f11_rezero_wait;
 
@@ -1328,29 +1457,28 @@ static int rmi_f11_initialize(struct rmi_function *fn)
 
 	sensor->report_abs = sensor->sens_query.has_abs;
 
-	if (pdata->f11_sensor_data) {
-		sensor->axis_align =
-			pdata->f11_sensor_data->axis_align;
-		sensor->topbuttonpad = pdata->f11_sensor_data->topbuttonpad;
-		sensor->kernel_tracking = pdata->f11_sensor_data->kernel_tracking;
-		sensor->dmax = pdata->f11_sensor_data->dmax;
+	sensor->axis_align =
+		f11->f11_sensor_data.axis_align;
+	sensor->type_a = f11->f11_sensor_data.type_a;
+	sensor->topbuttonpad = pdata->f11_sensor_data->topbuttonpad;
+	sensor->kernel_tracking = pdata->f11_sensor_data->kernel_tracking;
+	sensor->dmax = pdata->f11_sensor_data->dmax;
 
-		if (sensor->sens_query.has_physical_props) {
-			sensor->x_mm = sensor->sens_query.x_sensor_size_mm;
-			sensor->y_mm = sensor->sens_query.y_sensor_size_mm;
-		} else if (pdata->f11_sensor_data) {
-			sensor->x_mm = pdata->f11_sensor_data->x_mm;
-			sensor->y_mm = pdata->f11_sensor_data->y_mm;
-		}
-
-		if (sensor->sensor_type == rmi_f11_sensor_default)
-			sensor->sensor_type =
-				pdata->f11_sensor_data->sensor_type;
-
-		sensor->report_abs = sensor->report_abs
-			&& !(pdata->f11_sensor_data->disable_report_mask
-				& RMI_F11_DISABLE_ABS_REPORT);
+	if (sensor->sens_query.has_physical_props) {
+		sensor->x_mm = sensor->sens_query.x_sensor_size_mm;
+		sensor->y_mm = sensor->sens_query.y_sensor_size_mm;
+	} else {
+		sensor->x_mm = f11->f11_sensor_data.x_mm;
+		sensor->y_mm = f11->f11_sensor_data.y_mm;
 	}
+
+	if (sensor->sensor_type == rmi_f11_sensor_default)
+		sensor->sensor_type =
+			f11->f11_sensor_data.sensor_type;
+
+	sensor->report_abs = sensor->report_abs
+		&& !(f11->f11_sensor_data.disable_report_mask
+			& RMI_F11_DISABLE_ABS_REPORT);
 
 	if (!sensor->report_abs)
 		/*

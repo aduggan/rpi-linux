@@ -16,6 +16,7 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/debugfs.h>
+#include <linux/of.h>
 #include "rmi_bus.h"
 #include "rmi_driver.h"
 
@@ -86,14 +87,9 @@ static void rmi_physical_teardown_debugfs(struct rmi_device *rmi_dev)
 int rmi_register_transport_device(struct rmi_transport_dev *xport)
 {
 	static atomic_t transport_device_count = ATOMIC_INIT(0);
-	struct rmi_device_platform_data *pdata = xport->dev->platform_data;
+	struct rmi_device_platform_data *pdata = &xport->pdata;
 	struct rmi_device *rmi_dev;
 	int error;
-
-	if (!pdata) {
-		dev_err(xport->dev, "no platform data!\n");
-		return -EINVAL;
-	}
 
 	rmi_dev = kzalloc(sizeof(struct rmi_device), GFP_KERNEL);
 	if (!rmi_dev)
@@ -203,12 +199,29 @@ static int rmi_function_match(struct device *dev, struct device_driver *drv)
 	return fn->fd.function_number == handler->func;
 }
 
+#ifdef CONFIG_OF
+static void rmi_function_of_probe(struct rmi_function *fn)
+{
+	char of_name[8];
+
+	snprintf(of_name, sizeof(of_name), "rmi-f%02x",
+		fn->fd.function_number);
+	fn->dev.of_node = of_find_node_by_name(
+				fn->rmi_dev->xport->dev->of_node, of_name);
+}
+#else
+static inline void rmi_function_of_probe(struct rmi_function *fn)
+{}
+#endif
+
 static int rmi_function_probe(struct device *dev)
 {
 	struct rmi_function *fn = to_rmi_function(dev);
 	struct rmi_function_handler *handler =
 					to_rmi_function_handler(dev->driver);
 	int error;
+
+	rmi_function_of_probe(fn);
 
 	if (handler->probe) {
 		error = handler->probe(fn);
@@ -267,6 +280,10 @@ void rmi_unregister_function(struct rmi_function *fn)
 {
 	device_del(&fn->dev);
 	rmi_function_teardown_debugfs(fn);
+
+	if (fn->dev.of_node)
+		of_node_put(fn->dev.of_node);
+
 	put_device(&fn->dev);
 }
 
@@ -334,6 +351,60 @@ struct bus_type rmi_bus_type = {
 	.match		= rmi_bus_match,
 	.name		= "rmi",
 };
+
+int rmi_of_property_read_u32(struct device *dev, u32 *result,
+				const char *prop, bool optional)
+{
+	int retval;
+	u32 val = 0;
+
+	retval = of_property_read_u32(dev->of_node, prop, &val);
+	if (retval && (!optional && retval == -EINVAL)) {
+		dev_err(dev, "Failed to get %s value: %d\n",
+			prop, retval);
+		return retval;
+	}
+	*result = val;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(rmi_of_property_read_u32);
+
+int rmi_of_property_read_u16(struct device *dev, u16 *result,
+				const char *prop, bool optional)
+{
+	int retval;
+	u16 val = 0;
+
+	retval = of_property_read_u16(dev->of_node, prop, &val);
+	if (retval && (!optional && retval == -EINVAL)) {
+		dev_err(dev, "Failed to get %s value: %d\n",
+			prop, retval);
+		return retval;
+	}
+	*result = val;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(rmi_of_property_read_u16);
+
+int rmi_of_property_read_u8(struct device *dev, u8 *result,
+				const char *prop, bool optional)
+{
+	int retval;
+	u8 val = 0;
+
+	retval = of_property_read_u8(dev->of_node, prop, &val);
+	if (retval && (!optional && retval == -EINVAL)) {
+		dev_err(dev, "Failed to get %s value: %d\n",
+			prop, retval);
+		return retval;
+	}
+	*result = val;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(rmi_of_property_read_u8);
 
 #ifdef CONFIG_RMI4_DEBUG
 

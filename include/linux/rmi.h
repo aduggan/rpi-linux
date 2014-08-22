@@ -255,7 +255,7 @@ struct rmi_device_platform_data_spi {
  * functions.
  */
 struct rmi_device_platform_data {
-	char *sensor_name;	/* Used for diagnostics. */
+	const char *sensor_name;	/* Used for diagnostics. */
 
 	int irq_flags;
 
