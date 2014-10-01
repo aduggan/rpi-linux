@@ -792,7 +792,9 @@ static int hid_scan_report(struct hid_device *hid)
 	/*
 	* Vendor specific handlings
 	*/
-	if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS) &&
+	if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS
+	    || (hid->vendor == USB_VENDOR_ID_RAZER
+	    && hid->product == USB_DEVICE_ID_RAZER_BLADE_14)) &&
 	    (hid->group == HID_GROUP_GENERIC)) {
 		if ((parser->scan_flags & HID_SCAN_FLAG_VENDOR_SPECIFIC)
 		    && (parser->scan_flags & HID_SCAN_FLAG_GENDESK_POINTER))

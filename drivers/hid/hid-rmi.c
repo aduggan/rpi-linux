@@ -453,7 +453,15 @@ static int rmi_raw_event(struct hid_device *hdev,
 	case RMI_ATTN_REPORT_ID:
 		return rmi_input_event(hdev, data, size);
 	case RMI_MOUSE_REPORT_ID:
-		rmi_schedule_reset(hdev);
+		/*
+		 * touchpads with physical mouse buttons will report those
+		 * buttons in mouse reports even in RMI mode. Only reset
+		 * the device if we see reports which contain X or Y data.
+		 */
+		if (data[2] != 0 || data[3] != 0)
+			rmi_schedule_reset(hdev);
+		else
+			return 1;
 		break;
 	}
 
@@ -871,6 +879,11 @@ static int rmi_input_mapping(struct hid_device *hdev,
 		struct hid_input *hi, struct hid_field *field,
 		struct hid_usage *usage, unsigned long **bit, int *max)
 {
+	if (field->application == HID_GD_POINTER
+		&& (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON)
+		/* Pass mouse button reports to generic code for processing */
+		return 0;
+
 	/* we want to make HID ignore the advertised HID collection */
 	return -1;
 }
