@@ -57,6 +57,8 @@
 #include <mach/dma.h>
 #include <mach/vcio.h>
 #include <mach/system.h>
+#include <mach/gpio.h>
+#include <linux/i2c/i2c-hid.h>
 
 #include <linux/delay.h>
 
@@ -729,6 +731,21 @@ int __init bcm_register_device(struct platform_device *pdev)
 	return ret;
 }
 
+#define SYNA_TP_I2C_ADDR	0x2c
+#define SYNA_TP_I2C_BOARD	1
+
+static struct i2c_hid_platform_data syna_tp_pdata = {
+	.hid_descriptor_address = 0x20,
+};
+
+static struct i2c_board_info syna_tp_i2c_info[] = {
+	{
+		I2C_BOARD_INFO("hid", SYNA_TP_I2C_ADDR),
+		.irq = GPIO_IRQ_START + 4,
+		.platform_data = &syna_tp_pdata,
+	},
+};
+
 /*
  * Use these macros for platform and i2c devices that are present in the
  * Device Tree. This way the devices are only added on non-DT systems.
@@ -912,6 +929,9 @@ void __init bcm2708_init(void)
 	    spi_register_board_info(bcm2708_spi_devices,
 				    ARRAY_SIZE(bcm2708_spi_devices));
 #endif
+
+	i2c_register_board_info(SYNA_TP_I2C_BOARD, syna_tp_i2c_info,
+			ARRAY_SIZE(syna_tp_i2c_info));
 }
 
 static void timer_set_mode(enum clock_event_mode mode,
