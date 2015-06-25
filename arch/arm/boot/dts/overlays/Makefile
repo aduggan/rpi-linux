@@ -96,6 +96,7 @@ dtbo-$(RPI_DT_OVERLAYS) += spi2-1cs.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += spi2-2cs.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += spi2-3cs.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += spi-gpio35-39.dtbo
+dtbo-$(RPI_DT_OVERLAYS) += synaptics-hid-i2c-overlay.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += synaptics-rmi4-i2c-overlay.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += tinylcd35.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += uart1.dtbo
