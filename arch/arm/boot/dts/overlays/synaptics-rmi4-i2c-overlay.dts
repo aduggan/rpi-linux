@@ -1,0 +1,32 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+
+			rmi-i2c-dev@2c {
+				compatible = "syna,rmi-i2c";
+				reg = <0x2c>;
+				interrupt-parent = <&gpio>;
+				interrupts = <4 2>;
+				syna,sensor-name="TM1949";
+
+				rmi-f01@1 {
+					reg = <0x1>;
+					syna,f01-nosleep = <1>;
+				};
+
+				rmi-f11@11 {
+					reg = <0x11>;
+					syna,f11-flip-y = <1>;
+					syna,f11-sensor-type = <2>;
+				};
+			};
+		};
+	};
+};
