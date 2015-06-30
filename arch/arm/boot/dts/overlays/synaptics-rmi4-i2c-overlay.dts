@@ -1,0 +1,33 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+
+			rmi4-i2c-dev@20 {
+				compatible = "syna,rmi4-i2c";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0x20>;
+				interrupt-parent = <&gpio>;
+				interrupts = <4 2>;
+
+				rmi4-f01@1 {
+					reg = <0x1>;
+					syna,nosleep-mode = <1>;
+				};
+
+				rmi4-f11@11 {
+					reg = <0x11>;
+					touch-invert-y;
+					syna,sensor-type = <2>;
+				};
+			};
+		};
+	};
+};
