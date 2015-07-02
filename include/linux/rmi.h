@@ -375,6 +375,9 @@ struct rmi_transport_dev {
 	struct rmi_transport_stats stats;
 
 	struct rmi_device_platform_data pdata;
+
+	void *attn_data;
+	int attn_size;
 };
 
 /**

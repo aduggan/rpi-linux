@@ -100,6 +100,7 @@ static int rmi_f30_read_control_parameters(struct rmi_function *fn,
 static int rmi_f30_attention(struct rmi_function *fn, unsigned long *irq_bits)
 {
 	struct f30_data *f30 = dev_get_drvdata(&fn->dev);
+	struct rmi_device *rmi_dev = fn->rmi_dev;
 	int retval;
 	int gpiled = 0;
 	int value = 0;
@@ -110,13 +111,20 @@ static int rmi_f30_attention(struct rmi_function *fn, unsigned long *irq_bits)
 		return 0;
 
 	/* Read the gpi led data. */
-	retval = rmi_read_block(fn->rmi_dev, fn->fd.data_base_addr,
-		f30->data_regs, f30->register_count);
+	if (rmi_dev->xport->attn_data) {
+		memcpy(f30->data_regs, rmi_dev->xport->attn_data,
+			f30->register_count);
+		rmi_dev->xport->attn_data += f30->register_count;
+		rmi_dev->xport->attn_size -= f30->register_count;
+	} else {
+		retval = rmi_read_block(rmi_dev, fn->fd.data_base_addr,
+			f30->data_regs, f30->register_count);
 
-	if (retval) {
-		dev_err(&fn->dev, "%s: Failed to read F30 data registers.\n",
-			__func__);
-		return retval;
+		if (retval) {
+			dev_err(&fn->dev, "%s: Failed to read F30 data registers.\n",
+				__func__);
+			return retval;
+		}
 	}
 
 	for (reg_num = 0; reg_num < f30->register_count; ++reg_num) {

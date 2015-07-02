@@ -657,8 +657,10 @@ static int f11_2d_construct_data(struct f11_data *f11)
 
 	sensor->pkt_size = DIV_ROUND_UP(sensor->nbr_fingers, 4);
 
-	if (query->has_abs)
+	if (query->has_abs) {
 		sensor->pkt_size += (sensor->nbr_fingers * 5);
+		sensor->abs_size = sensor->pkt_size;
+	}
 
 	if (query->has_rel)
 		sensor->pkt_size +=  (sensor->nbr_fingers * 2);
@@ -1239,12 +1241,20 @@ static int rmi_f11_attention(struct rmi_function *fn, unsigned long *irq_bits)
 	u16 data_base_addr_offset = 0;
 	int error;
 
-	error = rmi_read_block(rmi_dev,
-			data_base_addr + data_base_addr_offset,
-			f11->sensor.data_pkt,
-			f11->sensor.pkt_size);
-	if (error)
-		return error;
+	if (rmi_dev->xport->attn_data) {
+		memcpy(f11->sensor.data_pkt,
+			rmi_dev->xport->attn_data,
+			f11->sensor.abs_size);
+		rmi_dev->xport->attn_data += f11->sensor.abs_size;
+		rmi_dev->xport->attn_size -= f11->sensor.abs_size;
+	} else {
+		error = rmi_read_block(rmi_dev,
+				data_base_addr + data_base_addr_offset,
+				f11->sensor.data_pkt,
+				f11->sensor.pkt_size);
+		if (error < 0)
+			return error;
+	}
 
 	rmi_f11_finger_handler(f11, &f11->sensor, irq_bits,
 				drvdata->num_of_irq_regs);
