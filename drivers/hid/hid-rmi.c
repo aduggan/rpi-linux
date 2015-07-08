@@ -408,6 +408,14 @@ static int rmi_post_resume(struct hid_device *hdev)
 }
 #endif /* CONFIG_PM */
 
+static int rmi_hid_reset(struct rmi_transport_dev *xport, u16 reset_addr)
+{
+	struct rmi_data *data = container_of(xport, struct rmi_data, xport);
+	struct hid_device *hdev = data->hdev;
+
+	return rmi_set_mode(hdev, RMI_MODE_ATTN_REPORTS);
+}
+
 static int rmi_input_mapping(struct hid_device *hdev,
 		struct hid_input *hi, struct hid_field *field,
 		struct hid_usage *usage, unsigned long **bit, int *max)
@@ -465,6 +473,7 @@ static struct rmi_device_platform_data rmi_hid_pdata = {
 static const struct rmi_transport_ops hid_rmi_ops = {
 	.write_block	= rmi_hid_write_block,
 	.read_block	= rmi_hid_read_block,
+	.reset		= rmi_hid_reset,
 };
 
 static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
