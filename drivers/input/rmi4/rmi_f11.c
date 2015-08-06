@@ -504,6 +504,7 @@ struct f11_data {
 	bool has_query12;
 	bool has_query27;
 	bool has_query28;
+	bool has_acm;
 	struct f11_2d_ctrl dev_controls;
 	struct mutex dev_controls_mutex;
 	u16 rezero_wait_ms;
@@ -784,6 +785,7 @@ static int rmi_f11_get_query_parameters(struct rmi_device *rmi_dev,
 	int query_size;
 	int rc;
 	u8 query_buf[RMI_F11_QUERY_SIZE];
+	bool has_query36 = false;
 
 	rc = rmi_read_block(rmi_dev, query_base_addr, query_buf,
 				RMI_F11_QUERY_SIZE);
@@ -1017,7 +1019,34 @@ static int rmi_f11_get_query_parameters(struct rmi_device *rmi_dev,
 		sensor_query->y_sensor_size_mm =
 			(query_buf[2] | (query_buf[3] << 8)) / 10;
 
-		query_size += 4;
+		/*
+		 * query 15 - 18 contain the size of the sensor
+		 * and query 19 - 26 contain bezel dimensions
+		 */
+		query_size += 12;
+	}
+
+	if (f11->has_query27)
+		++query_size;
+
+	if (f11->has_query28) {
+		rc = rmi_read(rmi_dev, query_base_addr + query_size,
+				query_buf);
+		if (rc < 0)
+			return rc;
+
+		has_query36 = !!(query_buf[0] & BIT(6));
+	}
+
+	if (has_query36) {
+		query_size += 2;
+		rc = rmi_read(rmi_dev, query_base_addr + query_size,
+				query_buf);
+		if (rc < 0)
+			return rc;
+
+		if (!!(query_buf[0] & BIT(5)))
+			f11->has_acm = true;
 	}
 
 	return query_size;
@@ -1164,6 +1193,9 @@ static int rmi_f11_initialize(struct rmi_function *fn)
 	rc = f11_2d_construct_data(f11);
 	if (rc < 0)
 		return rc;
+
+	if (f11->has_acm)
+		f11->sensor.attn_size += f11->sensor.nbr_fingers * 2;
 
 	/* allocate the in-kernel tracking buffers */
 	sensor->tracking_pos = devm_kzalloc(&fn->dev,
