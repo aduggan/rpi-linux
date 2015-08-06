@@ -36,6 +36,7 @@ struct rmi_2d_sensor_abs_object {
  * @nbr_fingers - How many fingers can this sensor report?
  * @data_pkt - buffer for data reported by this sensor.
  * @pkt_size - number of bytes in that buffer.
+ * @attn_size - Size of the HID attention report (only contains abs data).
  * @type_a - some early RMI4 2D sensors do not reliably track the finger
  * position when two fingers are on the device.  When this is true, we
  * assume we have one of those sensors and report events appropriately.
@@ -57,6 +58,7 @@ struct rmi_2d_sensor {
 	u8 nbr_fingers;
 	u8 *data_pkt;
 	int pkt_size;
+	int attn_size;
 	bool topbuttonpad;
 	enum rmi_sensor_type sensor_type;
 	struct input_dev *input;

@@ -659,7 +659,7 @@ static int f11_2d_construct_data(struct f11_data *f11)
 
 	if (query->has_abs) {
 		sensor->pkt_size += (sensor->nbr_fingers * 5);
-		sensor->abs_size = sensor->pkt_size;
+		sensor->attn_size = sensor->pkt_size;
 	}
 
 	if (query->has_rel)
@@ -1244,9 +1244,9 @@ static int rmi_f11_attention(struct rmi_function *fn, unsigned long *irq_bits)
 	if (rmi_dev->xport->attn_data) {
 		memcpy(f11->sensor.data_pkt,
 			rmi_dev->xport->attn_data,
-			f11->sensor.abs_size);
-		rmi_dev->xport->attn_data += f11->sensor.abs_size;
-		rmi_dev->xport->attn_size -= f11->sensor.abs_size;
+			f11->sensor.attn_size);
+		rmi_dev->xport->attn_data += f11->sensor.attn_size;
+		rmi_dev->xport->attn_size -= f11->sensor.attn_size;
 	} else {
 		error = rmi_read_block(rmi_dev,
 				data_base_addr + data_base_addr_offset,
