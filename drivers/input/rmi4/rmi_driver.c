@@ -20,7 +20,6 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/fs.h>
-#include <linux/gpio.h>
 #include <linux/kconfig.h>
 #include <linux/list.h>
 #include <linux/module.h>
@@ -42,27 +41,18 @@
 
 #define DEFAULT_POLL_INTERVAL_MS	13
 
-#define IRQ_DEBUG(data) (IS_ENABLED(CONFIG_RMI4_DEBUG) && data->irq_debug)
-
 static irqreturn_t rmi_irq_thread(int irq, void *p)
 {
 	struct rmi_transport_dev *xport = p;
 	struct rmi_device *rmi_dev = xport->rmi_dev;
 	struct rmi_driver *driver = rmi_dev->driver;
-	struct rmi_device_platform_data *pdata = xport->dev->platform_data;
 	struct rmi_driver_data *data;
 
 	data = dev_get_drvdata(&rmi_dev->dev);
 
-	if (IRQ_DEBUG(data))
-		dev_dbg(xport->dev, "ATTN gpio, value: %d.\n",
-				gpio_get_value(pdata->attn_gpio));
-
-	if (gpio_get_value(pdata->attn_gpio) == pdata->attn_polarity) {
-		data->attn_count++;
-		if (driver && driver->irq_handler && rmi_dev)
-			driver->irq_handler(rmi_dev, irq);
-	}
+	data->attn_count++;
+	if (driver && driver->irq_handler && rmi_dev)
+		driver->irq_handler(rmi_dev, irq);
 
 	return IRQ_HANDLED;
 }
@@ -128,9 +118,9 @@ static void disable_sensor(struct rmi_device *rmi_dev)
 	if (rmi_dev->xport->ops->disable_device)
 		rmi_dev->xport->ops->disable_device(rmi_dev->xport);
 
-	if (data->irq) {
-		disable_irq(data->irq);
-		free_irq(data->irq, rmi_dev->xport);
+	if (rmi_dev->xport->irq > 0) {
+		disable_irq(rmi_dev->xport->irq);
+		free_irq(rmi_dev->xport->irq, rmi_dev->xport);
 	}
 
 	data->enabled = false;
@@ -302,12 +292,12 @@ static int enable_sensor(struct rmi_device *rmi_dev)
 		return retval;
 
 	xport = rmi_dev->xport;
-	if (data->irq) {
-		retval = request_threaded_irq(data->irq,
+	if (xport->irq) {
+		retval = request_threaded_irq(xport->irq,
 				xport->hard_irq ? xport->hard_irq : NULL,
 				xport->irq_thread ?
 					xport->irq_thread : rmi_irq_thread,
-				data->irq_flags,
+				xport->irq_flags,
 				dev_name(&rmi_dev->dev), xport);
 		if (retval)
 			return retval;
@@ -753,16 +743,11 @@ static int rmi_driver_remove(struct device *dev)
 {
 	struct rmi_device *rmi_dev = to_rmi_device(dev);
 	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-	const struct rmi_device_platform_data *pdata =
-					rmi_get_platform_data(rmi_dev);
 
 	if (data->input)
 		input_unregister_device(data->input);
 	disable_sensor(rmi_dev);
 	rmi_free_function_list(rmi_dev);
-
-	if (data->gpio_held)
-		gpio_free(pdata->attn_gpio);
 
 	kfree(data->irq_status);
 	kfree(data);
@@ -922,48 +907,10 @@ static int rmi_driver_probe(struct device *dev)
 		}
 	}
 
-	if (gpio_is_valid(pdata->attn_gpio)) {
-		static const char GPIO_LABEL[] = "attn";
-		unsigned long gpio_flags = GPIOF_DIR_IN;
-
-		data->irq = gpio_to_irq(pdata->attn_gpio);
-		if (pdata->level_triggered) {
-			data->irq_flags = IRQF_ONESHOT |
-				((pdata->attn_polarity == RMI_ATTN_ACTIVE_HIGH)
-				? IRQF_TRIGGER_HIGH : IRQF_TRIGGER_LOW);
-		} else {
-			data->irq_flags =
-				(pdata->attn_polarity == RMI_ATTN_ACTIVE_HIGH)
-				? IRQF_TRIGGER_RISING : IRQF_TRIGGER_FALLING;
-		}
-
-		if (IS_ENABLED(CONFIG_RMI4_DEV))
-			gpio_flags |= GPIOF_EXPORT;
-
-		retval = gpio_request_one(pdata->attn_gpio, gpio_flags,
-					  GPIO_LABEL);
-		if (retval) {
-			dev_warn(dev, "WARNING: Failed to request ATTN gpio %d, code=%d.\n",
-				 pdata->attn_gpio, retval);
-			retval = 0;
-		} else {
-			dev_info(dev, "Obtained ATTN gpio %d.\n",
-					pdata->attn_gpio);
-			data->gpio_held = true;
-			if (IS_ENABLED(CONFIG_RMI4_DEV)) {
-				retval = gpio_export_link(dev,
-						GPIO_LABEL, pdata->attn_gpio);
-				if (retval) {
-					dev_warn(dev,
-						"WARNING: Failed to symlink ATTN gpio!\n");
-					retval = 0;
-				} else {
-					dev_info(dev, "Exported ATTN gpio %d.",
-						pdata->attn_gpio);
-				}
-			}
-		}
-	} else if (pdata->attn_gpio == RMI_POLLING) {
+	if (rmi_dev->xport->irq > 0) {
+		if (!rmi_dev->xport->hard_irq)
+			rmi_dev->xport->irq_flags |= IRQF_ONESHOT;
+	} else if (data->polling) {
 		data->poll_interval = ktime_set(0,
 			(pdata->poll_interval_ms ? pdata->poll_interval_ms :
 			DEFAULT_POLL_INTERVAL_MS) * 1000 * 1000);
@@ -982,8 +929,6 @@ err_destroy_functions:
 	rmi_free_function_list(rmi_dev);
 	kfree(irq_memory);
 err_free_mem:
-	if (data->gpio_held)
-		gpio_free(pdata->attn_gpio);
 	kfree(data);
 	return retval < 0 ? retval : 0;
 }

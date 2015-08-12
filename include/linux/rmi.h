@@ -215,21 +215,10 @@ struct rmi_device_platform_data_spi {
  *
  * @sensor_name - this is used for various diagnostic messages.
  *
+ * @irq_flags - this is used to specify intrerrupt type flags.
+ *
  * @firmware_name - if specified will override default firmware name,
  * for reflashing.
- *
- * @attn_gpio - the index of a GPIO that will be used to provide the ATTN
- * interrupt from the touch sensor.
- * @attn_polarity - indicates whether ATTN is active high or low.
- * @level_triggered - by default, the driver uses edge triggered interrupts.
- * However, this can cause problems with suspend/resume on some platforms.  In
- * that case, set this to 1 to use level triggered interrupts.
- * @gpio_config - a routine that will be called when the driver is loaded to
- * perform any platform specific GPIO configuration, and when it is unloaded
- * for GPIO de-configuration.  This is typically used to configure the ATTN
- * GPIO and the I2C or SPI pins, if necessary.
- * @gpio_data - platform specific data to be passed to the GPIO configuration
- * function.
  *
  * @poll_interval_ms - the time in milliseconds between reads of the interrupt
  * status register.  This is ignored if attn_gpio is non-zero.
@@ -268,11 +257,7 @@ struct rmi_device_platform_data_spi {
 struct rmi_device_platform_data {
 	char *sensor_name;	/* Used for diagnostics. */
 
-	int attn_gpio;
-	enum rmi_attn_polarity attn_polarity;
-	bool level_triggered;
-	void *gpio_data;
-	int (*gpio_config)(void *gpio_data, bool configure);
+	int irq_flags;
 
 	int poll_interval_ms;
 

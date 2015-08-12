@@ -196,23 +196,14 @@ static int rmi_i2c_probe(struct i2c_client *client,
 		return -EINVAL;
 	}
 
-	dev_dbg(&client->dev, "Probing %s at %#02x (GPIO %d).\n",
+	dev_dbg(&client->dev, "Probing %s at %#02x.\n",
 		pdata->sensor_name ? pdata->sensor_name : "-no name-",
-		client->addr, pdata->attn_gpio);
+		client->addr);
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		dev_err(&client->dev,
 			"adapter does not support required functionality.\n");
 		return -ENODEV;
-	}
-
-	if (pdata->gpio_config) {
-		retval = pdata->gpio_config(pdata->gpio_data, true);
-		if (retval < 0) {
-			dev_err(&client->dev, "Failed to configure GPIOs, code: %d.\n",
-				retval);
-			return retval;
-		}
 	}
 
 	rmi_i2c = devm_kzalloc(&client->dev, sizeof(struct rmi_i2c_xport),
@@ -226,6 +217,8 @@ static int rmi_i2c_probe(struct i2c_client *client,
 	rmi_i2c->xport.dev = &client->dev;
 	rmi_i2c->xport.proto_name = "i2c";
 	rmi_i2c->xport.ops = &rmi_i2c_ops;
+	rmi_i2c->xport.irq = client->irq;
+	rmi_i2c->xport.irq_flags = pdata->irq_flags;
 
 	/*
 	 * Setting the page to zero will (a) make sure the PSR is in a
@@ -241,7 +234,7 @@ static int rmi_i2c_probe(struct i2c_client *client,
 	if (retval) {
 		dev_err(&client->dev, "Failed to register transport driver at 0x%.2X.\n",
 			client->addr);
-		goto err_gpio;
+		return retval;
 	}
 
 	i2c_set_clientdata(client, rmi_i2c);
@@ -249,24 +242,13 @@ static int rmi_i2c_probe(struct i2c_client *client,
 	dev_info(&client->dev, "registered rmi i2c driver at %#04x.\n",
 			client->addr);
 	return 0;
-
-err_gpio:
-	if (pdata->gpio_config)
-		pdata->gpio_config(pdata->gpio_data, false);
-
-	return retval;
 }
 
 static int rmi_i2c_remove(struct i2c_client *client)
 {
-	const struct rmi_device_platform_data *pdata =
-				dev_get_platdata(&client->dev);
 	struct rmi_i2c_xport *rmi_i2c = i2c_get_clientdata(client);
 
 	rmi_unregister_transport_device(&rmi_i2c->xport);
-
-	if (pdata->gpio_config)
-		pdata->gpio_config(pdata->gpio_data, false);
 
 	return 0;
 }

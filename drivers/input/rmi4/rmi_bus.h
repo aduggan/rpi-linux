@@ -175,6 +175,9 @@ struct rmi_transport_dev {
 	struct device *dev;
 	struct rmi_device *rmi_dev;
 
+	int irq;
+	int irq_flags;
+
 	irqreturn_t (*irq_thread)(int irq, void *p);
 	irqreturn_t (*hard_irq)(int irq, void *p);
 
