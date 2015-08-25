@@ -205,6 +205,8 @@ struct rmi_device_platform_data_spi {
 	u32 split_read_byte_delay_us;
 	u32 pre_delay_us;
 	u32 post_delay_us;
+	u8 bits_per_word;
+	u16 mode;
 
 	void *cs_assert_data;
 	int (*cs_assert) (const void *cs_assert_data, const bool assert);
