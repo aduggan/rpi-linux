@@ -99,6 +99,44 @@ struct pdt_entry {
 int rmi_read_pdt_entry(struct rmi_device *rmi_dev, struct pdt_entry *entry,
 			u16 pdt_address);
 
+#define RMI_REG_DESC_PRESENSE_BITS	(32 * BITS_PER_BYTE)
+#define RMI_REG_DESC_SUBPACKET_BITS	(37 * BITS_PER_BYTE)
+
+/* describes a single packet register */
+struct rmi_register_desc_item {
+	u16 reg;
+	unsigned long reg_size;
+	u8 num_subpackets;
+	unsigned long subpacket_map[BITS_TO_LONGS(
+				RMI_REG_DESC_SUBPACKET_BITS)];
+};
+
+/*
+ * describes the packet registers for a particular type
+ * (ie query, control, data)
+ */
+struct rmi_register_descriptor {
+	unsigned long struct_size;
+	unsigned long presense_map[BITS_TO_LONGS(RMI_REG_DESC_PRESENSE_BITS)];
+	u8 num_registers;
+	struct rmi_register_desc_item *registers;
+};
+
+int rmi_read_register_desc(struct rmi_device *d, u16 addr,
+				struct rmi_register_descriptor *rdesc);
+const struct rmi_register_desc_item *rmi_get_register_desc_item(
+				struct rmi_register_descriptor *rdesc, u16 reg);
+
+/*
+ * Calculate the total size of all of the registers described in the
+ * descriptor.
+ */
+size_t rmi_register_desc_calc_size(struct rmi_register_descriptor *rdesc);
+int rmi_register_desc_calc_reg_offset(
+			struct rmi_register_descriptor *rdesc, u16 reg);
+bool rmi_register_desc_has_subpacket(const struct rmi_register_desc_item *item,
+			u8 subpacket);
+
 bool rmi_is_physical_driver(struct device_driver *);
 int rmi_register_physical_driver(void);
 void rmi_unregister_physical_driver(void);
