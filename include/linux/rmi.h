@@ -32,7 +32,7 @@ enum rmi_attn_polarity {
 };
 
 /**
- * struct rmi_f11_axis_alignment - target axis alignment
+ * struct rmi_2d_axis_alignment - target axis alignment
  * @swap_axes: set to TRUE if desired to swap x- and y-axis
  * @flip_x: set to TRUE if desired to flip direction on x-axis
  * @flip_y: set to TRUE if desired to flip direction on y-axis
@@ -49,7 +49,7 @@ enum rmi_attn_polarity {
  * @rel_report_enabled - if set to true, the relative reporting will be
  *               automatically enabled for this sensor.
  */
-struct rmi_f11_2d_axis_alignment {
+struct rmi_2d_axis_alignment {
 	u32 swap_axes;	/* boolean, but u32 is needed by debugfs API */
 	u32 flip_x;	/* boolean */
 	u32 flip_y;	/* boolean */
@@ -73,16 +73,16 @@ struct rmi_f11_2d_axis_alignment {
  * @rmi_f11_sensor_touchpad - thread the sensor as a touchpad (indirect
  * pointing).
  */
-enum rmi_f11_sensor_type {
-	rmi_f11_sensor_default = 0,
-	rmi_f11_sensor_touchscreen,
-	rmi_f11_sensor_touchpad
+enum rmi_sensor_type {
+	rmi_sensor_default = 0,
+	rmi_sensor_touchscreen,
+	rmi_sensor_touchpad
 };
 
 #define RMI_F11_DISABLE_ABS_REPORT      BIT(0)
 
 /**
- * struct rmi_f11_sensor_data - overrides defaults for a single F11 2D sensor.
+ * struct rmi_2d_sensor_data - overrides defaults for a 2D sensor.
  * @axis_align - provides axis alignment overrides (see above).
  * @sensor_type - Forces the driver to treat the sensor as an indirect
  * pointing device (touchpad) rather than a direct pointing device
@@ -101,12 +101,13 @@ enum rmi_f11_sensor_type {
  * @dmax - the maximum distance (in sensor units) the kernel tracking allows two
  * distincts fingers to be considered the same.
  */
-struct rmi_f11_sensor_data {
-	struct rmi_f11_2d_axis_alignment axis_align;
-	enum rmi_f11_sensor_type sensor_type;
+struct rmi_2d_sensor_platform_data {
+	struct rmi_2d_axis_alignment axis_align;
+	enum rmi_sensor_type sensor_type;
 	int x_mm;
 	int y_mm;
 	int disable_report_mask;
+	u16 rezero_wait;
 	bool topbuttonpad;
 	bool kernel_tracking;
 	int dmax;
@@ -268,8 +269,7 @@ struct rmi_device_platform_data {
 	struct rmi_device_platform_data_spi spi_data;
 
 	/* function handler pdata */
-	struct rmi_f11_sensor_data *f11_sensor_data;
-	u16 f11_rezero_wait;
+	struct rmi_2d_sensor_platform_data *sensor_pdata;
 	struct rmi_f01_power_management power_management;
 	struct rmi_button_map *f19_button_map;
 	struct rmi_button_map *f1a_button_map;

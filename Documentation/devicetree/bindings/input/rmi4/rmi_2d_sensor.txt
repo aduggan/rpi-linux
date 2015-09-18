@@ -1,13 +1,14 @@
-Synaptics RMI4 F11 Device Binding
+Synaptics RMI4 2D Sensor Device Binding
 
 The Synaptics RMI4 core is able to support RMI4 devices using differnet
 transports and differnet functions. This file describes the device tree
-bindings for devices which contain Function 11. Complete documentation
-for transports and other functions can be found in:
+bindings for devices which contain 2D sensors using Function 11 or
+Function 12. Complete documentation for transports and other functions
+can be found in:
 Documentation/devicetree/bindings/input/rmi4.
 
-RMI4 Function 11 is for 2D touch position sensing. Additional documentation for
-F11 can be found at:
+RMI4 Function 11 and Function 12 are for 2D touch position sensing.
+Additional documentation for F11 can be found at:
 http://www.synaptics.com/sites/default/files/511-000136-01-Rev-E-RMI4-Interfacing-Guide.pdf
 
 Optional Properties:
