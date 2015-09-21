@@ -74,17 +74,6 @@ struct rmi_driver_data {
 	int (*post_resume) (const void *pm_data);
 #endif
 
-#ifdef CONFIG_RMI4_DEBUG
-	struct dentry *debugfs_delay;
-	struct dentry *debugfs_xport;
-	struct dentry *debugfs_reg_ctl;
-	struct dentry *debugfs_reg;
-	struct dentry *debugfs_irq;
-	struct dentry *debugfs_attn_count;
-	u16 reg_debug_addr;
-	u8 reg_debug_size;
-#endif
-
 	void *data;
 };
 
