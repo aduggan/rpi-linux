@@ -920,15 +920,15 @@ static int rmi_driver_probe(struct device *dev)
 		goto err_destroy_functions;
 	}
 
-	if (IS_ENABLED(CONFIG_PM_SLEEP)) {
-		data->pm_data = pdata->pm_data;
-		data->pre_suspend = pdata->pre_suspend;
-		data->post_suspend = pdata->post_suspend;
-		data->pre_resume = pdata->pre_resume;
-		data->post_resume = pdata->post_resume;
+#ifdef CONFIG_PM_SLEEP
+	data->pm_data = pdata->pm_data;
+	data->pre_suspend = pdata->pre_suspend;
+	data->post_suspend = pdata->post_suspend;
+	data->pre_resume = pdata->pre_resume;
+	data->post_resume = pdata->post_resume;
 
-		mutex_init(&data->suspend_mutex);
-	}
+	mutex_init(&data->suspend_mutex);
+#endif
 
 	if (data->input) {
 		rmi_driver_set_input_name(rmi_dev, data->input);
