@@ -276,10 +276,6 @@ struct rmi_device_platform_data {
 
 	bool unified_input;
 
-#ifdef CONFIG_RMI4_FWLIB
-	char *firmware_name;
-#endif
-
 #ifdef	CONFIG_PM
 	void *pm_data;
 	int (*pre_suspend) (const void *pm_data);
