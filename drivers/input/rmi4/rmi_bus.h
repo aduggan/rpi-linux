@@ -105,127 +105,10 @@ int __must_check __rmi_register_function_handler(struct rmi_function_handler *,
 
 void rmi_unregister_function_handler(struct rmi_function_handler *);
 
-/**
- * struct rmi_driver - driver for an RMI4 sensor on the RMI bus.
- *
- * @driver: Device driver model driver
- * @irq_handler: Callback for handling irqs
- * @reset_handler: Called when a reset is detected.
- * @clear_irq_bits: Clear the specified bits in the current interrupt mask.
- * @set_irq_bist: Set the specified bits in the current interrupt mask.
- * @store_productid: Callback for cache product id from function 01
- * @data: Private data pointer
- *
- */
-struct rmi_driver {
-	struct device_driver driver;
 
-	int (*irq_handler)(struct rmi_device *rmi_dev, int irq);
-	int (*reset_handler)(struct rmi_device *rmi_dev);
-	int (*clear_irq_bits)(struct rmi_device *rmi_dev, unsigned long *mask);
-	int (*set_irq_bits)(struct rmi_device *rmi_dev, unsigned long *mask);
-	int (*store_productid)(struct rmi_device *rmi_dev);
-	int (*set_input_params)(struct rmi_device *rmi_dev,
-			struct input_dev *input);
-	void *data;
-};
 
 #define to_rmi_driver(d) \
 	container_of(d, struct rmi_driver, driver);
-
-/**
- * struct rmi_transport_stats - diagnostic information about the RMI transport
- * device, used in the xport_info debugfs file.
- *
- * @proto String indicating the protocol being used.
- * @tx_count Number of transmit operations.
- * @tx_errs  Number of errors encountered during transmit operations.
- * @tx_bytes Number of bytes transmitted.
- * @rx_count Number of receive operations.
- * @rx_errs  Number of errors encountered during receive operations.
- * @rx_bytes Number of bytes received.
- */
-struct rmi_transport_stats {
-	unsigned long tx_count;
-	unsigned long tx_errs;
-	size_t tx_bytes;
-	unsigned long rx_count;
-	unsigned long rx_errs;
-	size_t rx_bytes;
-};
-
-/**
- * struct rmi_transport_dev - represent an RMI transport device
- *
- * @dev: Pointer to the communication device, e.g. i2c or spi
- * @rmi_dev: Pointer to the RMI device
- * @irq_thread: if not NULL, the sensor driver will use this instead of the
- * default irq_thread implementation.
- * @hard_irq: if not NULL, the sensor driver will use this for the hard IRQ
- * handling
- * @proto_name: name of the transport protocol (SPI, i2c, etc)
- * @ops: pointer to transport operations implementation
- * @stats: transport statistics
- *
- * The RMI transport device implements the glue between different communication
- * buses such as I2C and SPI.
- *
- */
-struct rmi_transport_dev {
-	struct device *dev;
-	struct rmi_device *rmi_dev;
-
-	int irq;
-	int irq_flags;
-
-	irqreturn_t (*irq_thread)(int irq, void *p);
-	irqreturn_t (*hard_irq)(int irq, void *p);
-
-	const char *proto_name;
-	const struct rmi_transport_ops *ops;
-	struct rmi_transport_stats stats;
-
-	struct rmi_device_platform_data pdata;
-};
-
-/**
- * struct rmi_transport_ops - defines transport protocol operations.
- *
- * @write_block: Writing a block of data to the specified address
- * @read_block: Read a block of data from the specified address.
- */
-struct rmi_transport_ops {
-	int (*write_block)(struct rmi_transport_dev *xport, u16 addr,
-			   const void *buf, size_t len);
-	int (*read_block)(struct rmi_transport_dev *xport, u16 addr,
-			  void *buf, size_t len);
-
-	int (*enable_device) (struct rmi_transport_dev *xport);
-	void (*disable_device) (struct rmi_transport_dev *xport);
-	int (*reset)(struct rmi_transport_dev *xport, u16 reset_addr);
-};
-
-/**
- * struct rmi_device - represents an RMI4 sensor device on the RMI bus.
- *
- * @dev: The device created for the RMI bus
- * @number: Unique number for the device on the bus.
- * @driver: Pointer to associated driver
- * @xport: Pointer to the transport interface
- * @debugfs_root: base for this particular sensor device.
- *
- */
-struct rmi_device {
-	struct device dev;
-	int number;
-
-	struct rmi_driver *driver;
-	struct rmi_transport_dev *xport;
-
-#ifdef CONFIG_RMI4_DEBUG
-	struct dentry *debugfs_root;
-#endif
-};
 
 #define to_rmi_device(d) container_of(d, struct rmi_device, dev)
 
@@ -299,8 +182,6 @@ static inline int rmi_write_block(struct rmi_device *d, u16 addr,
 	return d->xport->ops->write_block(d->xport, addr, buf, len);
 }
 
-int rmi_register_transport_device(struct rmi_transport_dev *xport);
-void rmi_unregister_transport_device(struct rmi_transport_dev *xport);
 int rmi_for_each_dev(void *data, int (*func)(struct device *dev, void *data));
 
 /**

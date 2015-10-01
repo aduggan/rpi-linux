@@ -32,51 +32,6 @@
 
 #define NAME_BUFFER_SIZE 256
 
-struct rmi_driver_data {
-	struct list_head function_list;
-
-	struct rmi_device *rmi_dev;
-
-	struct rmi_function *f01_container;
-	bool f01_bootloader_mode;
-
-	u32 attn_count;
-	bool polling;
-	int irq;
-	int irq_flags;
-	int num_of_irq_regs;
-	int irq_count;
-	unsigned long *irq_status;
-	unsigned long *fn_irq_bits;
-	unsigned long *current_irq_mask;
-	unsigned long *new_irq_mask;
-	struct mutex irq_mutex;
-	struct input_dev *input;
-	char input_phys[NAME_BUFFER_SIZE];
-
-	/* Following are used when polling. */
-	struct hrtimer poll_timer;
-	struct work_struct poll_work;
-	ktime_t poll_interval;
-
-	u8 pdt_props;
-	u8 bsr;
-
-	bool enabled;
-#ifdef CONFIG_PM_SLEEP
-	bool suspended;
-	struct mutex suspend_mutex;
-
-	void *pm_data;
-	int (*pre_suspend) (const void *pm_data);
-	int (*post_suspend) (const void *pm_data);
-	int (*pre_resume) (const void *pm_data);
-	int (*post_resume) (const void *pm_data);
-#endif
-
-	void *data;
-};
-
 #define RMI_PDT_ENTRY_SIZE 6
 #define RMI_PDT_FUNCTION_VERSION_MASK   0x60
 #define RMI_PDT_INT_SOURCE_COUNT_MASK   0x07
@@ -140,8 +95,6 @@ bool rmi_register_desc_has_subpacket(const struct rmi_register_desc_item *item,
 bool rmi_is_physical_driver(struct device_driver *);
 int rmi_register_physical_driver(void);
 void rmi_unregister_physical_driver(void);
-
-int rmi_process_interrupt_requests(struct rmi_device *rmi_dev);
 
 int rmi_register_f01_handler(void);
 void rmi_unregister_f01_handler(void);
