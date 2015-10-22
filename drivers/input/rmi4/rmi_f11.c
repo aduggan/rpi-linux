@@ -686,7 +686,8 @@ static int f11_2d_construct_data(struct f11_data *f11)
 		sensor->pkt_size +=
 			DIV_ROUND_UP(query->nr_touch_shapes + 1, 8);
 
-	sensor->data_pkt = kzalloc(sensor->pkt_size, GFP_KERNEL);
+	sensor->data_pkt = devm_kzalloc(&sensor->fn->dev, sensor->pkt_size,
+					GFP_KERNEL);
 	if (!sensor->data_pkt)
 		return -ENOMEM;
 
