@@ -507,7 +507,9 @@ static void __exit rmi_bus_exit(void)
 	 */
 
 	rmi_unregister_physical_driver();
+	rmi_unregister_f30_handler();
 	rmi_unregister_f12_handler();
+	rmi_unregister_f11_handler();
 	rmi_unregister_f01_handler();
 	rmi_bus_teardown_debugfs();
 	bus_unregister(&rmi_bus_type);
