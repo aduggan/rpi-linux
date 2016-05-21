@@ -317,6 +317,19 @@ int rmi_2d_sensor_of_probe(struct device *dev,
 
 	pdata->rezero_wait = val;
 
+	if (of_property_read_bool(dev->of_node, "syna,dribble-force-enable"))
+		pdata->dribble = RMI_REG_STATE_ON;
+	else if (of_property_read_bool(dev->of_node,
+	    "syna,dribble-force-disable"))
+		pdata->dribble = RMI_REG_STATE_OFF;
+
+	if (of_property_read_bool(dev->of_node,
+	    "syna,palm-detect-force-enable"))
+		pdata->palm_detect = RMI_REG_STATE_ON;
+	else if (of_property_read_bool(dev->of_node,
+				"syna,palm-detect-force-disable"))
+		pdata->palm_detect = RMI_REG_STATE_OFF;
+
 	return 0;
 }
 #else

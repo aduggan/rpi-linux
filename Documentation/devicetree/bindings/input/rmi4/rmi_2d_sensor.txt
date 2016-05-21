@@ -37,6 +37,16 @@ Optional Properties:
 				disable reporing absolute position data.
 - syna,rezero-wait-ms: Time in miliseconds to wait after issuing a rezero
 				command.
+- syna,dribble-force-enable: Enable reporting of dribble packets in the firmware
+				(overwrites default value in firmware config).
+- syna,dribble-force-disable: Disable reporting of dribble packets in the firmware.
+				(overwrites default value in firmware config).
+- syna,palm-detect-force-enable: Enable reporting the palm detect gesture in the
+				firmware.  (overwrites default value in firmware
+				config).
+- syna,palm-detect-force-disable: Disable reporting the palm detect gesture in
+				the firmware.  (overwrites default value in
+				firmware config).
 
 
 Example of a RMI4 I2C device with F11:
