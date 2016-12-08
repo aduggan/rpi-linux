@@ -14,6 +14,7 @@
 #include <linux/hid.h>
 #include <linux/input.h>
 #include <linux/input/mt.h>
+#include <linux/irq.h>
 #include <linux/irqdomain.h>
 #include <linux/module.h>
 #include <linux/pm.h>
